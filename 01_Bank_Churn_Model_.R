@@ -18,7 +18,9 @@ options(yardstick.event_first = FALSE) #Evaluate second factor level as factor o
 #--  https://www.kaggle.com/shivan118/churn-modeling-dataset 
 
 train <- read_csv("./data/Churn_Modelling.csv") %>% 
-  select(-c(Surname, RowNumber, CustomerId))
+  select(-c(Surname, RowNumber, CustomerId)) 
+
+train$Exited <- as.factor(train$Exited)
 
 skim(train)
 
@@ -81,7 +83,7 @@ ggpairs(train %>%
 
 #--- Categorical
 train %>% 
-  mutate(Exited = if_else(Exited == 1, "Y", "N"),
+  mutate(Exited = as.factor(if_else(Exited == 1, "Y", "N")),
          HasCrCard = if_else(HasCrCard == 1, "Y", "N"),
          IsActiveMember = if_else(IsActiveMember == 1, "Y", "N"),
          NumOfProducts = as.character(NumOfProducts)) %>% 
@@ -136,6 +138,128 @@ bagged_cust <-
 #   step_scale(all_numeric_predictors(), -c(HasCrCard, Age, IsActiveMember, NumOfProducts)) %>% 
 #   step_dummy(all_nominal_predictors()) %>% 
 #   step_samplingmethod(Exited) #Change or Add Sampling Steps Here as Necessary
+
+recipe_1 <-
+    recipe(Exited ~., data = training(cust_split)) %>%
+    step_integer(HasCrCard, IsActiveMember, zero_based = T) %>%
+    step_integer(NumOfProducts) %>%
+    step_mutate(SalaryBalanceRatio = EstimatedSalary/Balance,
+                CreditScoreAgeRatio = CreditScore/Age,
+                TenureAgeRatio = Tenure/Age,
+                SalaryBalanceRatio = if_else(is.infinite(SalaryBalanceRatio),0,SalaryBalanceRatio)) %>%
+    step_scale(all_numeric_predictors(), -c(HasCrCard, Age, IsActiveMember, NumOfProducts)) %>%
+    step_dummy(all_nominal_predictors()) %>%
+    step_smote(Exited) 
+
+recipe_2 <-
+  recipe(Exited ~., data = training(cust_split)) %>%
+  step_integer(HasCrCard, IsActiveMember, zero_based = T) %>%
+  step_integer(NumOfProducts) %>%
+  step_mutate(SalaryBalanceRatio = EstimatedSalary/Balance,
+              CreditScoreAgeRatio = CreditScore/Age,
+              TenureAgeRatio = Tenure/Age,
+              SalaryBalanceRatio = if_else(is.infinite(SalaryBalanceRatio),0,SalaryBalanceRatio)) %>%
+  step_scale(all_numeric_predictors(), -c(HasCrCard, Age, IsActiveMember, NumOfProducts)) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_rose(Exited) 
+
+recipe_3 <-
+  recipe(Exited ~., data = training(cust_split)) %>%
+  step_integer(HasCrCard, IsActiveMember, zero_based = T) %>%
+  step_integer(NumOfProducts) %>%
+  step_mutate(SalaryBalanceRatio = EstimatedSalary/Balance,
+              CreditScoreAgeRatio = CreditScore/Age,
+              TenureAgeRatio = Tenure/Age,
+              SalaryBalanceRatio = if_else(is.infinite(SalaryBalanceRatio),0,SalaryBalanceRatio)) %>%
+  step_scale(all_numeric_predictors(), -c(HasCrCard, Age, IsActiveMember, NumOfProducts)) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_bsmote(Exited) 
+
+recipe_4 <-
+  recipe(Exited ~., data = training(cust_split)) %>%
+  step_integer(HasCrCard, IsActiveMember, zero_based = T) %>%
+  step_integer(NumOfProducts) %>%
+  step_mutate(SalaryBalanceRatio = EstimatedSalary/Balance,
+              CreditScoreAgeRatio = CreditScore/Age,
+              TenureAgeRatio = Tenure/Age,
+              SalaryBalanceRatio = if_else(is.infinite(SalaryBalanceRatio),0,SalaryBalanceRatio)) %>%
+  step_scale(all_numeric_predictors(), -c(HasCrCard, Age, IsActiveMember, NumOfProducts)) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_upsample(Exited) 
+
+recipe_5 <-
+  recipe(Exited ~., data = training(cust_split)) %>%
+  step_integer(HasCrCard, IsActiveMember, zero_based = T) %>%
+  step_integer(NumOfProducts) %>%
+  step_mutate(SalaryBalanceRatio = EstimatedSalary/Balance,
+              CreditScoreAgeRatio = CreditScore/Age,
+              TenureAgeRatio = Tenure/Age,
+              SalaryBalanceRatio = if_else(is.infinite(SalaryBalanceRatio),0,SalaryBalanceRatio)) %>%
+  step_scale(all_numeric_predictors(), -c(HasCrCard, Age, IsActiveMember, NumOfProducts)) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_adasyn(Exited) 
+
+recipe_6 <-
+  recipe(Exited ~., data = training(cust_split)) %>%
+  step_integer(HasCrCard, IsActiveMember, zero_based = T) %>%
+  step_integer(NumOfProducts) %>%
+  step_mutate(SalaryBalanceRatio = EstimatedSalary/Balance,
+              CreditScoreAgeRatio = CreditScore/Age,
+              TenureAgeRatio = Tenure/Age,
+              SalaryBalanceRatio = if_else(is.infinite(SalaryBalanceRatio),0,SalaryBalanceRatio)) %>%
+  step_scale(all_numeric_predictors(), -c(HasCrCard, Age, IsActiveMember, NumOfProducts)) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_tomek(Exited) 
+
+recipe_8 <-
+  recipe(Exited ~., data = training(cust_split)) %>%
+  step_integer(HasCrCard, IsActiveMember, zero_based = T) %>%
+  step_integer(NumOfProducts) %>%
+  step_mutate(SalaryBalanceRatio = EstimatedSalary/Balance,
+              CreditScoreAgeRatio = CreditScore/Age,
+              TenureAgeRatio = Tenure/Age,
+              SalaryBalanceRatio = if_else(is.infinite(SalaryBalanceRatio),0,SalaryBalanceRatio)) %>%
+  step_scale(all_numeric_predictors(), -c(HasCrCard, Age, IsActiveMember, NumOfProducts)) %>%
+  step_dummy(all_nominal_predictors())
+
+recipe_7 <-
+  recipe(Exited ~., data = training(cust_split)) %>%
+  step_integer(HasCrCard, IsActiveMember, zero_based = T) %>%
+  step_integer(NumOfProducts) %>%
+  step_mutate(SalaryBalanceRatio = EstimatedSalary/Balance,
+              CreditScoreAgeRatio = CreditScore/Age,
+              TenureAgeRatio = Tenure/Age,
+              SalaryBalanceRatio = if_else(is.infinite(SalaryBalanceRatio),0,SalaryBalanceRatio)) %>%
+  step_scale(all_numeric_predictors(), -c(HasCrCard, Age, IsActiveMember, NumOfProducts)) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_nearmiss(Exited) 
+
+
+recipe_9 <-
+  recipe(Exited ~., data = training(cust_split)) %>%
+  step_integer(HasCrCard, IsActiveMember, zero_based = T) %>%
+  step_integer(NumOfProducts) %>%
+  step_mutate(SalaryBalanceRatio = EstimatedSalary/Balance,
+              CreditScoreAgeRatio = CreditScore/Age,
+              TenureAgeRatio = Tenure/Age,
+              SalaryBalanceRatio = if_else(is.infinite(SalaryBalanceRatio),0,SalaryBalanceRatio)) %>%
+  step_scale(all_numeric_predictors(), -c(HasCrCard, Age, IsActiveMember, NumOfProducts)) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_smote(Exited) %>%
+  step_downsample(Exited)
+
+recipe_10 <-
+  recipe(Exited ~., data = training(cust_split)) %>%
+  step_integer(HasCrCard, IsActiveMember, zero_based = T) %>%
+  step_integer(NumOfProducts) %>%
+  step_mutate(SalaryBalanceRatio = EstimatedSalary/Balance,
+              CreditScoreAgeRatio = CreditScore/Age,
+              TenureAgeRatio = Tenure/Age,
+              SalaryBalanceRatio = if_else(is.infinite(SalaryBalanceRatio),0,SalaryBalanceRatio)) %>%
+  step_scale(all_numeric_predictors(), -c(HasCrCard, Age, IsActiveMember, NumOfProducts)) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_rose(Exited) %>%
+  step_downsample(Exited)
 
 #-- Corrrelation plot
 cust_train <- recipe_8 %>% prep() %>% bake(new_data = NULL)
