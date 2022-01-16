@@ -24,7 +24,7 @@ train$Exited <- as.factor(train$Exited)
 
 skim(train)
 
-viz_by_dtype <- function (x,y) {
+viz_by_dtype <- function(x,y) {
   title <- str_replace_all(y,"_"," ") %>% 
     str_to_title()
   if ("factor" %in% class(x)) {
@@ -34,7 +34,7 @@ viz_by_dtype <- function (x,y) {
       theme(legend.position = "none",
             axis.text.x = element_text(angle = 45, hjust = 1),
             axis.text = element_text(size = 8)) +
-      scale_fill_viridis_d()+
+      scale_fill_viridis_d() +
       labs(title = title, y = "", x = "")
   }
   else if ("numeric" %in% class(x)) {
@@ -50,7 +50,7 @@ viz_by_dtype <- function (x,y) {
       geom_histogram() +
       theme_minimal() +
       theme(legend.position = "none") +
-      scale_fill_viridis_d()+
+      scale_fill_viridis_d() +
       labs(title = title, y = "", x = "")
   }
   else if ("character" %in% class(x)) {
@@ -61,7 +61,7 @@ viz_by_dtype <- function (x,y) {
       theme(legend.position = "none",
             axis.text.x = element_text(angle = 45, hjust = 1),
             axis.text = element_text(size = 8)) +
-      labs(title = title, y  ="", x= "")
+      labs(title = title, y  = "", x = "")
   }
 }
 variable_list <- colnames(train) %>% as.list()
@@ -94,7 +94,7 @@ train %>%
   group_by(Variables, Values) %>% 
   summarise(mean = mean(Exited),
             conf_int = 1.96*sd(Exited)/sqrt(n())) %>% 
-  ggplot(aes(x=Values, y=mean, color=Values)) +
+  ggplot(aes(x = Values, y = mean, color = Values)) +
   geom_point() +
   geom_errorbar(aes(ymin = mean - conf_int, ymax = mean + conf_int), width = 0.1) +
   theme_minimal() +
@@ -275,11 +275,20 @@ cust_train %>%
 
 #--- Workflow
 recipe_list <- 
-  list(SMOTE = recipe_1, ROSE = recipe_2, BSMOTE = recipe_3, UPSAMPLE = recipe_4, ADASYN = recipe_5, TOMEK=recipe_6, NEARMISS = recipe_7, NOSAMPLING = recipe_8, SMOTEDOWNSAMPLE= recipe_9, ROSEDOWNSAMPLE = recipe_10)
+  list(
+       SMOTE = recipe_1, ROSE = recipe_2, BSMOTE = recipe_3, UPSAMPLE = recipe_4, 
+       ADASYN = recipe_5, TOMEK = recipe_6, NEARMISS = recipe_7, 
+       NOSAMPLING = recipe_8, SMOTEDOWNSAMPLE = recipe_9, 
+       ROSEDOWNSAMPLE = recipe_10
+      )
+
 model_list <- 
-  list(Decision_Tree = dt_cust, Boosted_Trees = xgboost_cust, Random_Forest = rf_cust, Bagged_Trees = bagged_cust)
+  list(Decision_Tree = dt_cust, Boosted_Trees = xgboost_cust, 
+       Random_Forest = rf_cust, Bagged_Trees = bagged_cust)
+
 wf_set <- 
   workflow_set(preproc = recipe_list, models = model_list, cross = T)
+
 set.seed(246)
 train_resamples <- 
   vfold_cv(training(cust_split), v = 5, strata = Exited)
@@ -315,13 +324,14 @@ collect_metrics(wf_sample_exp) %>%
   mutate(Workflow_Rank =  row_number(-mean),
          .metric = str_to_upper(.metric)) %>% 
   arrange(Workflow_Rank) %>% 
-  ggplot(aes(x=Workflow_Rank, y = mean, color = Model_Type)) +
+  ggplot(aes(x = Workflow_Rank, y = mean, color = Model_Type)) +
   geom_point(aes(shape = Recipe)) +
   scale_shape_manual(values = 1:n_distinct(recipe_list)) +
-  geom_errorbar(aes(ymin = mean-std_err, ymax = mean+std_err)) +
+  geom_errorbar(aes(ymin = mean - std_err, ymax = mean + std_err)) +
   theme_minimal() +
   scale_color_viridis_d() +
-  labs(title = "Performance Comparison of Workflows", x = "Workflow Rank", y="Error Metric", color = "Model Types", shape = "Recipes") +
+  labs(title = "Performance Comparison of Workflows", x = "Workflow Rank", 
+       y = "Error Metric", color = "Model Types", shape = "Recipes") +
   facet_wrap(~.metric,scales = 'free_y',ncol = 4)
 
 #-- Bayesian
@@ -331,7 +341,7 @@ jindex_model_eval %>%
   tidy() %>% 
   mutate(model = fct_inorder(model)) %>% 
   separate(model, into = c("Recipe", "Model_Type"), sep = "_", remove = F, extra = "merge") %>% 
-  ggplot(aes(x=posterior, fill = Model_Type)) +
+  ggplot(aes(x = posterior, fill = Model_Type)) +
   geom_density(aes(alpha = 0.7)) +
   theme_minimal() +
   scale_fill_viridis_d(end = 0.8) +
