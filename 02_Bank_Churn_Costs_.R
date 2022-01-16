@@ -6,6 +6,7 @@ library(forcats) #Working with factors
 library(patchwork) #ggplot grids
 tidymodels_prefer()
 options(yardstick.event_first = FALSE)
+
 library(yardstick)
 class_metric <- metric_set(
                              yardstick::accuracy,
@@ -30,7 +31,7 @@ xgb_fit <- wf_sample_exp %>%
 xgb_fit %>% 
   predict(new_data = testing(cust_split), type = 'prob') %>% 
   bind_cols(testing(cust_split)) %>% 
-  ggplot(aes(x=.pred_1, fill = Exited, color = Exited)) +
+  ggplot(aes(x = .pred_1, fill = Exited, color = Exited)) +
   geom_histogram(bins = 40, alpha = 0.5) +
   theme_minimal() +
   scale_fill_viridis_d(aesthetics = c('color', 'fill'), end = 0.8) +
@@ -69,6 +70,7 @@ threshold_data %>%
 
 
 #Threshold Analysis by Several Classification Metrics
+#--- Cof (values selected by trial an error)
 list(pred_df = list(pred_df = xgb_pred), 
      threshold = list(threshold = seq(0.06, 0.94, by = 0.01))) %>% 
   cross_df() %>% 
@@ -96,14 +98,14 @@ train %>%
   ggplot(aes(CLV)) +
   geom_histogram() +
   theme_minimal() +
-  labs(title = 'Distribution of Annual CLV', x='CLV', y = 'Count')
+  labs(title = 'Distribution of Annual CLV', x = 'CLV', y = 'Count')
 
 #--- Cost function
 threshold_data %>% 
   filter(.metric %in% c('sens', 'spec')) %>% 
   pivot_wider(id_cols = .threshold, values_from = .estimate, names_from = .metric) %>% 
-  mutate(Cost_FN = ((1-sens) * 510 * 149), 
-         Cost_FP = ((1-spec) * 1991 * 99),
+  mutate(Cost_FN = ((1 - sens) * 510 * 149), 
+         Cost_FP = ((1 - spec) * 1991 * 99),
          Total_Cost = Cost_FN + Cost_FP) %>% 
   select(.threshold, Cost_FN, Cost_FP, Total_Cost) %>% 
   pivot_longer(2:4, names_to = 'Cost_Function', values_to = 'Cost') %>% 
@@ -117,13 +119,13 @@ threshold_data %>%
 threshold_data %>% 
   filter(.metric %in% c('sens', 'spec')) %>% 
   pivot_wider(id_cols = .threshold, values_from = .estimate, names_from = .metric) %>% 
-  mutate(Cost = ((1-sens) * 510 * 149) + ((1-spec) * 1991 * 99),
-         j_index = (sens+spec)-1) %>% 
-  ggplot(aes(y=Cost, x = .threshold)) +
+  mutate(Cost = ((1 - sens) * 510 * 149) + ((1 - spec) * 1991 * 99),
+         j_index = (sens + spec) - 1) %>% 
+  ggplot(aes(y = Cost, x = .threshold)) +
   geom_line() +
   geom_point(aes(size = j_index, color = j_index)) +
   geom_vline(xintercept = 0.47, lty = 2) +
-  annotate(x = 0.36, y=100000, geom = 'text', label = 'Best Class Differentiation\nJ-Index = 0.56,\nCost = $57,629,\nThreshold = 0.47') +
+  annotate(x = 0.36, y = 100000, geom = 'text', label = 'Best Class Differentiation\nJ-Index = 0.56,\nCost = $57,629,\nThreshold = 0.47') +
   geom_vline(xintercept = 0.69, lty = 2) +
   annotate(x = 0.81, y = 100000, geom = 'text', label = 'Lowest Cost Model\nJ-Index = 0.48,\nCost = $48,329,\nThreshold = 0.69') +    
   theme_minimal() +
@@ -150,7 +152,7 @@ t3 <- xgb_pred %>%
   conf_mat(estimate = .pred, Exited) %>% 
   autoplot(type = 'heatmap') + 
   scale_fill_gradient2() +
-  labs(title ='With Adjusted Decision Threshold = 0.69')
+  labs(title = 'With Adjusted Decision Threshold = 0.69')
 t2 / t1 / t3 +
   plot_annotation(title = 'Confusion Matrices for UPSAMPLE_Boosted_Trees')
 
