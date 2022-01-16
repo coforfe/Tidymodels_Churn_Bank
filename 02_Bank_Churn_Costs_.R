@@ -6,7 +6,17 @@ library(forcats) #Working with factors
 library(patchwork) #ggplot grids
 tidymodels_prefer()
 options(yardstick.event_first = FALSE)
-class_metric <- metric_set(accuracy, f_meas, j_index, kap, precision, sensitivity, specificity, mcc)
+library(yardstick)
+class_metric <- metric_set(
+                             yardstick::accuracy,
+                             yardstick::f_meas, 
+                             yardstick::j_index, 
+                             yardstick::kap, 
+                             yardstick::precision, 
+                             yardstick::sensitivity, 
+                             yardstick::specificity, 
+                             yardstick::mcc
+                          )
 
 
 best_result <- wf_sample_exp %>% 
@@ -31,25 +41,28 @@ xgb_pred <- xgb_fit %>%
   predict(new_data = testing(cust_split), type = 'prob') %>% 
   bind_cols(testing(cust_split)) %>% 
   select(Exited, .pred_0, .pred_1)
+
 #Generate Sequential Threshold Tibble
 threshold_data <- xgb_pred %>% 
-  threshold_perf(truth = Exited, Estimate = .pred_1, thresholds = seq(0.1, 1, by = 0.01))
+  threshold_perf(truth = Exited, estimate = .pred_1, thresholds = seq(0.1, 1, by = 0.01))
+
 #Identify Threshold for Maximum J-Index
 max_j_index <- threshold_data %>% 
   filter(.metric == 'j_index') %>% 
   filter(.estimate == max(.estimate)) %>% 
   select(.threshold) %>% 
   as_vector()
+
 #Visualise Threshold Analysis
 threshold_data %>% 
   filter(.metric != 'distance') %>% 
-  ggplot(aes(x=.threshold, y=.estimate, color = .metric)) +
+  ggplot(aes(x = .threshold, y = .estimate, color = .metric)) +
   geom_line(size = 2) +
   geom_vline(xintercept = max_j_index, lty = 5, alpha = .6) +
   theme_minimal() +
   scale_colour_viridis_d(end = 0.8) +
-  labs(x='Threshold', 
-       y='Estimate', 
+  labs(x = 'Threshold', 
+       y = 'Estimate', 
        title = 'Balancing Performance by Varying Threshold',
        subtitle = 'Verticle Line = Max J-Index',
        color = 'Metric')
@@ -57,23 +70,23 @@ threshold_data %>%
 
 #Threshold Analysis by Several Classification Metrics
 list(pred_df = list(pred_df = xgb_pred), 
-     threshold = list(threshold = seq(0.03, 0.99, by = 0.01))) %>% 
+     threshold = list(threshold = seq(0.06, 0.94, by = 0.01))) %>% 
   cross_df() %>% 
-  mutate(pred_data = map2(pred_df, threshold, ~mutate(.x, .prob_class = as_factor(if_else(.pred_1 < .y , 0, 1)))),
-         pred_data = map2(pred_data,  threshold, ~mutate(.x, .prob_metric = if_else(.pred_1 < .y , 0, 1))),
-         pred_metric = map(pred_data, ~class_metric(.x, truth = Exited, estimate = .prob_class)),
-         roc_auc = map(pred_data, ~roc_auc(.x, truth = Exited, estimate = .prob_metric)),
-         pr_auc = map(pred_data, ~pr_auc(.x, truth = Exited, estimate = .prob_metric)),
-         pred_metric = pmap(list(pred_metric, roc_auc, pr_auc),~bind_rows(..1,..2,..3))) %>%
-  select(pred_metric, threshold) %>%                                                            
-  unnest(pred_metric) %>%                                                                        
-  ggplot(aes(x=threshold, y=.estimate, color = .metric)) +
+  mutate( pred_data = map2(pred_df, threshold, ~mutate(.x, .prob_class = as_factor(if_else(.pred_1 < .y , 0, 1))))) %>%
+  mutate( pred_data = map2(pred_data,  threshold, ~mutate(.x, .prob_metric = if_else(.pred_1 < .y , 0, 1)))) %>%
+  mutate( pred_metric = map(pred_data, ~class_metric(.x, truth = Exited, estimate = .prob_class))) %>% 
+  mutate( roc_auc = map(pred_data, ~roc_auc(.x, truth = Exited, estimate = .prob_metric)) ) %>%
+  mutate( pr_auc = map(pred_data, ~pr_auc(.x, truth = Exited, estimate = .prob_metric)) ) %>%
+  mutate( pred_metric = pmap(list(pred_metric, roc_auc, pr_auc),~bind_rows(..1,..2,..3))) %>%
+  select( pred_metric, threshold) %>%                                                            
+  unnest( pred_metric) %>%                                                                        
+  ggplot(aes(x = threshold, y = .estimate, color = .metric)) +
   geom_line(size = 1) +
   scale_color_viridis_d() +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45)) +
   facet_wrap(~.metric, nrow = 2) +
-  labs(title = 'Impact of Decision Threshold on Classification Metrics', x= 'Threshold', y = 'Estimate', color = 'Metric')
+  labs(title = 'Impact of Decision Threshold on Classification Metrics', x = 'Threshold', y = 'Estimate', color = 'Metric')
 
 #--- CLV
 train %>% 
