@@ -13,6 +13,7 @@ library(skimr) #Quick Statistical EDA
 library(patchwork) #Create ggplot Patchworks
 library(GGally) #Pair Plots
 options(yardstick.event_first = FALSE) #Evaluate second factor level as factor of interest for yardstick metrics
+library(tictoc)
 
 
 #--  https://www.kaggle.com/shivan118/churn-modeling-dataset 
@@ -261,9 +262,9 @@ recipe_10 <-
   step_rose(Exited) %>%
   step_downsample(Exited)
 
-#-- Corrrelation plot
+#-- Corrrelation plot - Just for recipe-8 (no imbalance transformation)
 cust_train <- recipe_8 %>% prep() %>% bake(new_data = NULL)
-cust_test <- recipe_8 %>% prep() %>% bake(testing(cust_split))
+cust_test  <- recipe_8 %>% prep() %>% bake(testing(cust_split))
 cust_train %>% 
   bind_rows(cust_test) %>% 
   mutate(Exited = as.numeric(Exited)) %>% 
@@ -276,10 +277,11 @@ cust_train %>%
 #--- Workflow
 recipe_list <- 
   list(
-       SMOTE = recipe_1, ROSE = recipe_2, BSMOTE = recipe_3, UPSAMPLE = recipe_4, 
-       ADASYN = recipe_5, TOMEK = recipe_6, NEARMISS = recipe_7, 
-       NOSAMPLING = recipe_8, SMOTEDOWNSAMPLE = recipe_9, 
-       ROSEDOWNSAMPLE = recipe_10
+       SMOTE = recipe_1, ROSE = recipe_2,
+       BSMOTE = recipe_3, UPSAMPLE = recipe_4, 
+       ADASYN = recipe_5, TOMEK = recipe_6, 
+       NEARMISS = recipe_7, NOSAMPLING = recipe_8, 
+       SMOTEDOWNSAMPLE = recipe_9, ROSEDOWNSAMPLE = recipe_10
       )
 
 model_list <- 
@@ -304,6 +306,7 @@ class_metric <- metric_set(
   yardstick::mcc
 )
 
+tic()
 doParallel::registerDoParallel(cores = 6)
 wf_sample_exp <- 
   wf_set %>% 
@@ -311,6 +314,7 @@ wf_sample_exp <-
                verbose = TRUE, 
                metrics = class_metric, 
                seed = 246)
+toc()
 
 #--- Metrics Evaluation
 collect_metrics(wf_sample_exp) %>% 
