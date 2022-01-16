@@ -283,8 +283,19 @@ wf_set <-
 set.seed(246)
 train_resamples <- 
   vfold_cv(training(cust_split), v = 5, strata = Exited)
-class_metric <- metric_set(accuracy, f_meas, j_index, kap, precision, sensitivity, specificity, roc_auc, mcc, pr_auc)
-doParallel::registerDoParallel(cores = 12)
+
+class_metric <- metric_set(
+  yardstick::accuracy, 
+  yardstick::f_meas, 
+  yardstick::j_index, 
+  yardstick::kap, 
+  yardstick::precision, 
+  yardstick::sensitivity, 
+  yardstick::specificity, 
+  yardstick::mcc
+)
+
+doParallel::registerDoParallel(cores = 6)
 wf_sample_exp <- 
   wf_set %>% 
   workflow_map(resamples = train_resamples, 
