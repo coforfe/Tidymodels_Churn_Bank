@@ -71,7 +71,7 @@ variable_plot <- map2(train, variable_list, viz_by_dtype) %>%
     ncol = 3,
     heights = 150,
     widths = 150)
-ggsave("eda.png", dpi = 600)
+ggsave("./charts/eda.png", dpi = 600)
 
 
 ggpairs(train %>% 
@@ -81,6 +81,7 @@ ggpairs(train %>%
   scale_fill_viridis_d(end = 0.8, aesthetics = c("color", "fill")) + 
   theme_minimal() +
   labs(title = "Numeric Bivariate Analysis of Customer Churn Data")
+ggsave("./charts/ggpairs_all.png", dpi = 600)
 
 #--- Categorical
 train %>% 
@@ -105,6 +106,7 @@ train %>%
   scale_color_viridis_d(aesthetics = c("color", "fill"), end = 0.8) +
   facet_wrap(~Variables, scales = 'free') +
   labs(title = 'Categorical Variable Analysis', subtitle = 'With 95% Confidence Intervals')
+ggsave("./charts/ggpairs_categoricals.png", dpi = 600)
 
 #--- Modeling 
 set.seed(246)
@@ -273,6 +275,7 @@ cust_train %>%
   scale_color_gradient2(low = 'orange', high = 'light blue') + 
   theme(axis.text.x = element_text(angle = 90)) +
   labs(title = "Correlation Plot for Trained Dataset")
+ggsave("./charts/Correlations_plot.png", dpi = 600)
 
 #--- Workflow
 recipe_list <- 
@@ -306,7 +309,7 @@ class_metric <- metric_set(
   yardstick::mcc
 )
 
-tic()
+tic() 
 doParallel::registerDoParallel(cores = 6)
 wf_sample_exp <- 
   wf_set %>% 
@@ -315,6 +318,7 @@ wf_sample_exp <-
                metrics = class_metric, 
                seed = 246)
 toc()
+#--- It takes -> 1.5 hours (Mac)
 
 #--- Metrics Evaluation
 collect_metrics(wf_sample_exp) %>% 
@@ -337,8 +341,10 @@ collect_metrics(wf_sample_exp) %>%
   labs(title = "Performance Comparison of Workflows", x = "Workflow Rank", 
        y = "Error Metric", color = "Model Types", shape = "Recipes") +
   facet_wrap(~.metric,scales = 'free_y',ncol = 4)
+ggsave("./charts/Performance_Comparison_Workflows.png", dpi = 500 )
 
 #-- Bayesian
+#- Execution Error...
 jindex_model_eval <- 
   perf_mod(wf_sample_exp, metric = "j_index", iter = 5000)
 jindex_model_eval %>% 
@@ -353,6 +359,7 @@ jindex_model_eval %>%
   labs(title = "Comparison of Posterior Distributions of Model Recipe Combinations", 
        x = expression(paste("Posterior for Mean J Index")), 
        y = "")
+ggsave("./charts/Bayesian_probabilities.png", dpi = 500 )
 
 
 
