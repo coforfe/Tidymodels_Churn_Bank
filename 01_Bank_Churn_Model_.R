@@ -71,6 +71,7 @@ variable_plot <- map2(train, variable_list, viz_by_dtype) %>%
     ncol = 3,
     heights = 150,
     widths = 150)
+variable_plot
 ggsave("./charts/eda.png", dpi = 600)
 
 
